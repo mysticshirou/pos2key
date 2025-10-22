@@ -1,1 +1,1 @@
-hi harish
+Bluestacks Settings -> Advanced -> Enable Android Debug Bridge (ADB)
