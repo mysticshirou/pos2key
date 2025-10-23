@@ -3,13 +3,18 @@ from subprocess import run
 def shell_run(input: str):
     return run(input, shell=True, capture_output=True, text=True)
 
+class NoDevicesError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+    def __str__(self):
+        return self.message 
+
 class ADBManager():
     def __init__(self):
-        # Connect to Bluestacks ADB
         devices = shell_run("adb devices")
-        print(devices.stdout, devices.stderr)
-
-        shell_run("abd shell")
+        if len(devices.stdout.strip().splitlines()) <= 1:
+            raise NoDevicesError("No andriod emulators detected.")
 
     def _jump(self):
         shell_run("adb shell input swipe 540 1200 540 600 200")

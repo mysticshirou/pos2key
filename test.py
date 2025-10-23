@@ -1,4 +1,4 @@
-from Android_Debug_Bridge import ADBManager
+from classes import ADBManager
 
 test = ADBManager()
 
