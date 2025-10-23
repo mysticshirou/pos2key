@@ -14,6 +14,3 @@ class Config(metaclass=Singleton):
 
     def get(self, key, default=None):
         return self.settings.get(key, default)
-
-def add(x, y):
-    return x + y
