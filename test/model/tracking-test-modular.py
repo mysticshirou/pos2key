@@ -10,6 +10,6 @@ tracker.set_grid_offset((0.5, 0.5), (0.5, 0.5))
 while True:
     choice = input(">>>")
     if choice == "1":
-        tracker.begin_tracking(show_other_dets=True)
+        tracker.begin_tracking(broadcast_fn=print, show_other_dets=True)
     else:
         exit()

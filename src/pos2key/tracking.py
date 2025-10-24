@@ -1,6 +1,7 @@
 import os
 import cv2
 import time
+import types
 import numpy as np
 from PIL import Image
 from pathlib import Path
@@ -17,10 +18,6 @@ def draw_gridlines(image, h_thresh: list[int]|tuple[int], v_thresh: list[int]|tu
     image = cv2.line(image, (0, v_thresh[0]), (image.shape[1], v_thresh[0]), colour, 2)
     image = cv2.line(image, (0, v_thresh[1]), (image.shape[1], v_thresh[1]), colour, 2)
     return image
-
-def on_event(event):
-    # Does whatever 
-    print(event)
 
 class Tracker:
     def __init__(self, bbox_colour = (0,255,0), grid_colour=(0,0,255), camera_id=0, cls=0):
@@ -88,7 +85,7 @@ class Tracker:
         masked_frame = cv2.cvtColor(masked_frame, cv2.COLOR_BGR2RGB)
         return masked_frame, clustered_frame, binary_image
 
-    def check_position(self, position: tuple[int], h_thresh: list[int]|tuple[int], v_thresh: list[int]|tuple[int]) -> dict[str, int]:
+    def check_position(self, broadcast_fn: types.FunctionType, position: tuple[int], h_thresh: list[int]|tuple[int], v_thresh: list[int]|tuple[int]):
         x, y = 0, 0
         if position[0] > h_thresh[0]: x = -1
         elif position[0] < h_thresh[1]: x = 1
@@ -98,10 +95,20 @@ class Tracker:
         elif position[1] < v_thresh[1]: y = 1
         else: y = 0
 
-        return {"x": x, "y": y}
+        print(position, h_thresh, v_thresh)
+        broadcast_fn({"x": x, "y": y})
 
-    def begin_tracking(self, save=True, show_other_dets=False, fps=30, verbose=False):
-        """Starts real time tracking"""
+    def begin_tracking(self, broadcast_fn: types.FunctionType, save=False, show_other_dets=False, fps=30, verbose=False):
+        """
+        Starts real time tracking
+        
+        Inputs:
+            broadcast_fn: Function used to broadcast outputs from check_position, must accept input of {"x": int, "y": int}
+            save: Whether to save initial depth scans
+            show_other_dets: Whether to show other detections that the tracker is not focused on
+            fps: FPS of output video
+            verbose: Whether to show ultralytics and other logs
+        """
         cap = cv2.VideoCapture(self.CAMERA)
         ret, frame = cap.read()
         assert ret
@@ -175,7 +182,7 @@ class Tracker:
                 if det.id == TRACKING_ID:
                     id_found = True
                     center = (int((x2-x1) / 2 + x1), int((y2-y1) / 2 + y1))
-                    self.check_position(center, GRID_HORIZONTAL, GRID_VERTICAL)
+                    self.check_position(broadcast_fn, center, GRID_HORIZONTAL, GRID_VERTICAL)
                     conf = det.conf.item()
 
                     annotated_frame = cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), self.BBOX_COLOUR, 2)   # Bounding box drawing
@@ -184,7 +191,7 @@ class Tracker:
                     annotated_frame = cv2.addWeighted(overlay, 0.4, annotated_frame, 0.6, 0.0)                  #
 
                     annotated_frame = cv2.circle(annotated_frame, center, 5, self.BBOX_COLOUR, 2)               # Player position
-
+                    
                     label = f'ID: {TRACKING_ID} | Conf: {conf:.2f}'                                             # Label
                     cv2.putText(annotated_frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, self.GRID_COLOUR, 2)
 
@@ -219,6 +226,6 @@ if __name__ == "__main__":
     while True:
         choice = input(">>>")
         if choice == "1":
-            tracker.begin_tracking(show_other_dets=True)
+            tracker.begin_tracking(broadcast_fn=print, show_other_dets=True)
         else:
             exit()
