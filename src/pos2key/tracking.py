@@ -95,7 +95,6 @@ class Tracker:
         elif position[1] < v_thresh[1]: y = 1
         else: y = 0
 
-        print(position, h_thresh, v_thresh)
         broadcast_fn({"x": x, "y": y})
 
     def begin_tracking(self, broadcast_fn: types.FunctionType, save=False, show_other_dets=False, fps=30, verbose=False):
