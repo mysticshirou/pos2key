@@ -1,8 +1,6 @@
 """
-Press 1 to start live tracking after all models are loaded.
-
-You will have 1 second to move away from your webcam and get in a neutral position.
-Once the depth scan is complete, pull up the new python window to see live feed
+Input 1 to start live tracking after all models are loaded to start the tracking
+Tracking auto reselects using the depth scan when the target is lost.
 """
 
 import cv2
