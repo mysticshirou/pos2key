@@ -17,7 +17,12 @@ license-files = ["LICEN[CS]E*"]
 dependencies = [
     "build>=1.3.0",
     "keyboard>=0.13.5",
+    "numpy>=2.0.2",
+    "opencv-python>=4.11.0.86",
+    "pillow>=11.3.0",
     "requests",
+    "transformers>=4.57.1",
+    "ultralytics>=8.3.221",
 ]
 
 
