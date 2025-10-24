@@ -10,18 +10,19 @@ class ADBError(Exception):
         super().__init__(error_message)
 
 class ADBManager():
-    def __init__(self, adb_endpoint: str = "127.0.0.1:5555") -> None:
+    def __init__(self, adb_endpoint: str = "127.0.0.1:5555", adb_location: str = "ADB\adb.exe") -> None:
         """
         Connects to the open ADB port with "adb connect <endpoint>".
         Checks if connection is successful with "adb devices".
         When both are successful, android emulator can be controlled.
         """
+        self.adb_location = adb_location
 
-        connection = self.shell_run(f"adb connect {adb_endpoint}")
+        connection = self.shell_run(f"{self.adb_location} connect {adb_endpoint}")
         if "No connection could be made" in connection.stdout.strip():
             raise ADBError(connection.stdout)
 
-        devices = self.shell_run("adb devices")
+        devices = self.shell_run(f"{self.adb_location} devices")
         if len(devices.stdout.strip().splitlines()) <= 1:
             raise ADBError("No android emulators detected.")
         
@@ -33,16 +34,16 @@ class ADBManager():
         return run(input, shell=True, capture_output=True, text=True)
 
     def _jump(self) -> CompletedProcess:
-        return self.shell_run("adb shell input swipe 540 1200 540 600 200")
+        return self.shell_run(f"{self.adb_location} shell input swipe 540 1200 540 600 200")
 
     def _roll(self) -> CompletedProcess:
-        return self.shell_run("adb shell input swipe 540 600 540 1200 200")
+        return self.shell_run(f"{self.adb_location} shell input swipe 540 600 540 1200 200")
 
     def _left(self) -> CompletedProcess:
-        return self.shell_run("adb shell input swipe 800 960 200 960 200")
+        return self.shell_run(f"{self.adb_location} shell input swipe 800 960 200 960 200")
 
     def _right(self) -> CompletedProcess:
-        return self.shell_run("adb shell input swipe 200 960 800 960 200")
+        return self.shell_run(f"{self.adb_location} shell input swipe 200 960 800 960 200")
 
 
 class Grid(Enum):
