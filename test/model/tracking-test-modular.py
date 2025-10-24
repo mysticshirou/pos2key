@@ -5,6 +5,7 @@ Tracking auto reselects using the depth scan when the target is lost.
 from pos2key.tracking import Tracker
 
 tracker = Tracker()
+tracker.set_grid_offset((0.5, 0.5), (0.5, 0.5))
 
 while True:
     choice = input(">>>")

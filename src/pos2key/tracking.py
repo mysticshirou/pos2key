@@ -175,7 +175,7 @@ class Tracker:
                 if det.id == TRACKING_ID:
                     id_found = True
                     center = (int((x2-x1) / 2 + x1), int((y2-y1) / 2 + y1))
-                    self._check_position(center, GRID_HORIZONTAL, GRID_VERTICAL)
+                    self.check_position(center, GRID_HORIZONTAL, GRID_VERTICAL)
                     conf = det.conf.item()
 
                     annotated_frame = cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), self.BBOX_COLOUR, 2)   # Bounding box drawing

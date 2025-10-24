@@ -1,5 +1,5 @@
 #%%
-from classes import SubwaySurfer, Grid
+from pos2key.classes import SubwaySurfer, Grid
 
 #           Left   Centre   Right
 # Jump    (-1,  1) (0,  1) (1,  1)
