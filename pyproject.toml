@@ -1,0 +1,8 @@
+[project]
+name = "subsurf-handtrack"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "mediapipe>=0.10.21",
+    "opencv-python>=4.11.0.86",
+]
