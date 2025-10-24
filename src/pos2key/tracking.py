@@ -88,16 +88,17 @@ class Tracker:
         masked_frame = cv2.cvtColor(masked_frame, cv2.COLOR_BGR2RGB)
         return masked_frame, clustered_frame, binary_image
 
-    def _check_position(self, position: tuple[int], h_thresh: list[int]|tuple[int], v_thresh: list[int]|tuple[int]):
-        if position[0] > h_thresh[0]: on_event("left")
-        elif position[0] < h_thresh[1]: on_event("right")
-        else: on_event("middle")
+    def check_position(self, position: tuple[int], h_thresh: list[int]|tuple[int], v_thresh: list[int]|tuple[int]) -> dict[str, int]:
+        x, y = 0, 0
+        if position[0] > h_thresh[0]: x = -1
+        elif position[0] < h_thresh[1]: x = 1
+        else: x = 0
 
-        if position[1] > v_thresh[0]: on_event("crouch")
-        elif position[1] < v_thresh[1]: on_event("jump")
-        else: on_event("neutral")
+        if position[1] > v_thresh[0]: y = -1
+        elif position[1] < v_thresh[1]: y = 1
+        else: y = 0
 
-        print("")
+        return {"x": x, "y": y}
 
     def begin_tracking(self, save=True, show_other_dets=False, fps=30, verbose=False):
         """Starts real time tracking"""
