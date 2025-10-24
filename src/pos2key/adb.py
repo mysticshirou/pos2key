@@ -1,5 +1,6 @@
 from subprocess import run, CompletedProcess
 from enum import Enum
+from time import sleep
 
 class ADBError(Exception):
     # Makes error appear in main namespace (ADBError: <exception> vs classes.ADBError: <exception>)
@@ -10,7 +11,7 @@ class ADBError(Exception):
         super().__init__(error_message)
 
 class ADBManager():
-    def __init__(self, adb_endpoint: str = "127.0.0.1:5555", adb_location: str = "ADB\adb.exe") -> None:
+    def __init__(self, adb_endpoint: str = "127.0.0.1:5555", adb_location: str = r"ADB\adb.exe") -> None:
         """
         Connects to the open ADB port with "adb connect <endpoint>".
         Checks if connection is successful with "adb devices".
@@ -21,11 +22,13 @@ class ADBManager():
         connection = self.shell_run(f"{self.adb_location} connect {adb_endpoint}")
         if "No connection could be made" in connection.stdout.strip():
             raise ADBError(connection.stdout)
+        else: print(fr"ADB {connection.stdout}") # should see "ADB connected to 127.0.0.1:5555"
 
         devices = self.shell_run(f"{self.adb_location} devices")
         if len(devices.stdout.strip().splitlines()) <= 1:
-            raise ADBError("No android emulators detected.")
-        
+            raise ADBError(f"No android emulators detected. \nstdout: {devices.stdout}")
+        else: print("ADB ready")
+
     @staticmethod
     def shell_run(input: str) -> CompletedProcess:
         """
@@ -79,12 +82,14 @@ class SubwaySurfer(ADBManager):
         """
         Determines the X direction by checking whether x_distance is positive or negative. 
         """
+        print("right"  if x_distance >= 0 else "left")
         return self._right() if x_distance >= 0 else self._left()
     
     def _moveY(self, y_distance: int) -> CompletedProcess:
         """
         Determines the Y direction by checking whether x_distance is positive or negative. 
         """
+        print("jump"  if y_distance >= 0 else "roll")
         return self._jump() if y_distance >= 0 else self._roll()
 
     def move_to(self, desired_position: Grid) -> None:
@@ -97,18 +102,21 @@ class SubwaySurfer(ADBManager):
               X  Y
             (-1, 1)
         """
+        print(f"Moving to {desired_position}")
 
         # Calculates X & Y distances to travel by finding the difference between the desired and current positions.
         x_distance_to_travel = desired_position["x"] - self.x
         y_distance_to_travel = desired_position["y"] - self.y
-        print(f"X Offset: {x_distance_to_travel}, Y Offset: {y_distance_to_travel}")
+        print(f"Current Pos: {self.x, self.y}, Desired Pos: {desired_position}. X Offset: {x_distance_to_travel}, Y Offset: {y_distance_to_travel}")
 
         # Executes movements
-        for _ in range(x_distance_to_travel):
+        for _ in range(abs(x_distance_to_travel)):
             self._moveX(x_distance_to_travel)
+            sleep(0.1)
 
-        for _ in range(y_distance_to_travel):
+        for _ in range(abs(y_distance_to_travel)):
             self._moveY(y_distance_to_travel)
+            sleep(0.1)
 
         # Sets desired X position to be the new current positon.
         # Y positon does not need to be set as it auto resolves itself (Character will stop jumping / rolling automatically). 

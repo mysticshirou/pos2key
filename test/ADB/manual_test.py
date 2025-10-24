@@ -1,5 +1,6 @@
 #%%
-from pos2key.classes import SubwaySurfer, Grid
+from pos2key.adb import SubwaySurfer, Grid
+from time import sleep
 
 #           Left   Centre   Right
 # Jump    (-1,  1) (0,  1) (1,  1)
@@ -12,11 +13,25 @@ from pos2key.classes import SubwaySurfer, Grid
 test = SubwaySurfer(Grid.CENTRE_NEUTRAL.value)
 
 #%%
+test.move_to(Grid.LEFT_ROLL.value)
+test.move_to(Grid.CENTRE_JUMP.value)
+test.move_to(Grid.LEFT_ROLL.value)
+test.move_to(Grid.CENTRE_JUMP.value)
+test.move_to(Grid.LEFT_ROLL.value)
+test.move_to(Grid.CENTRE_JUMP.value)
+test.move_to(Grid.LEFT_ROLL.value)
+test.move_to(Grid.CENTRE_JUMP.value)
+test.move_to(Grid.LEFT_ROLL.value)
+test.move_to(Grid.CENTRE_JUMP.value)
 
-#%%
-while True:
-    test.moveX(1)
-#     test._jump()
-#     test._roll()
-#     test._left()
-#     test._right()
+# from subprocess import run, CompletedProcess
+
+# def shell_run(input: str) -> CompletedProcess:
+#     """
+#     Wrapper for subprocess.run(), so that its arguements can be centrally controlled (and code looks cleaner cause DRY).
+#     """
+#     return run(input, shell=True, capture_output=True, text=True)
+
+# test = shell_run(r"ADB\adb devices")
+# print(test.stderr, test.stdout)
+# %%
