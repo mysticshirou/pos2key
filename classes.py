@@ -56,7 +56,21 @@ class SubwaySurfer(ADBManager):
     def _moveY(self, x_distance):
         return self._jump() if x_distance >= 0 else self._roll()
 
-    def move_to(self, desired_position):
+    @staticmethod
+    def map2coord(model_output: int) -> Grid | ValueError:
+        match model_output:
+            case 1: return Grid.LEFT_JUMP
+            case 2: return Grid.CENTRE_JUMP
+            case 3: return Grid.RIGHT_JUMP
+            case 4: return Grid.LEFT_NEUTRAL
+            case 5: return Grid.CENTRE_NEUTRAL
+            case 6: return Grid.RIGHT_NEUTRAL
+            case 7: return Grid.LEFT_ROLL
+            case 8: return Grid.CENTRE_ROLL
+            case 9: return Grid.RIGHT_ROLL
+            case _: raise ValueError(f"Unknown model output: {model_output}")
+
+    def move_to(self, desired_position: Grid):
         """
                   Left   Centre   Right
         Jump    (-1,  1) (0,  1) (1,  1)
