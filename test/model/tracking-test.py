@@ -5,13 +5,10 @@ Tracking auto reselects using the depth scan when the target is lost.
 
 import cv2
 import time
-import requests
 import numpy as np
 from PIL import Image
-from io import BytesIO
 from ultralytics import YOLO
 from transformers import pipeline
-import matplotlib.pyplot as plt
 
 pipe = pipeline(task="depth-estimation", model="depth-anything/Depth-Anything-V2-Small-hf")
 model = YOLO("yolo11n.pt")
