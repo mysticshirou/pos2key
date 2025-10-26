@@ -7,18 +7,20 @@ import math
 import numpy as np
 
 class HandController:
-    def __init__(self, width=600, height=500, fist_threshold=0.07, thres_x=0.1, thres_y=0.1):
-        self.cam_width = width
-        self.cam_height = height
+    def __init__(self, width=600, height=500, control_threshold=0.06, thres_x=0.1, thres_y=0.1):
         self.control_mode = False
-        self.fist_threshold = fist_threshold
+        self.control_threshold = control_threshold
         self.THRES_X = thres_x
         self.THRES_Y = thres_y
         self.prev_center = None
 
+        self.window_titles = ["Hand Capture", "Virtual Buttons"]
+        self.button_pressed = "Center"
+        self.buttons_config = {"Left": [None, (255, 0, 0)], "Center": [None, (0, 255, 0)], "Right": [None, (0, 0, 255)], "Jump": [None, (255, 255, 0)], "Slide": [None, (255, 0, 255)]}
+
         self.cap = cv2.VideoCapture(0)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.cam_width)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.cam_height)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
         self.mp_drawing = mp.solutions.drawing_utils
         self.drawing_styles = mp.solutions.drawing_styles
@@ -26,46 +28,107 @@ class HandController:
 
         self.hand = self.mp_hands.Hands(
             max_num_hands=1,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.2,
+            static_image_mode=False
         )
 
         self.finger_tips = [4, 8, 12, 16, 20] # thumb, index, middle, ring, pinky
         self.finger_mcps = [2, 5, 9, 13, 17]
-        self.finger_ip = [3, 7, 11, 15, 19]
+        self.finger_ips = [3, 7, 11, 15, 19]
         self.wrist = 0
     
-    def distance(self, x1, x2, y1, y2):
+    def distance(self, x1, x2, y1, y2, z1=None, z2=None):
+        if z1!=None and z2!=None:
+            return math.sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
         return math.sqrt((x1-x2)**2+(y1-y2)**2)
 
-    def check_fist(self, landmark):
-        """return True when making a fist"""
+    def check_control(self, landmark):
+        """return True when making a pointer"""
         folded = 0
-        for tip, mcp in zip(self.finger_ip[1:], self.finger_mcps[1:]):
-            if landmark[tip].y > landmark[mcp].y:
+        for tip, mcp in zip(self.finger_ips[2:], self.finger_mcps[2:]):
+            if self.distance(landmark[tip].x, landmark[mcp].x, landmark[tip].y, landmark[mcp].y) < self.control_threshold:
                 folded+=1
 
-        closed_thumb = (
-            abs(landmark[self.finger_ip[0]].x - landmark[self.finger_ip[1]].x) < self.fist_threshold and 
-            abs(landmark[self.finger_ip[0]].y - landmark[self.finger_ip[1]].y) < self.fist_threshold
-            )
+        index_tip = landmark[self.finger_tips[1]]
+        index_mcp = landmark[self.finger_mcps[1]]
 
-        return folded==4 #and closed_thumb
+        open_index_finger = (
+            self.distance(index_tip.x, index_mcp.x, index_tip.y, index_mcp.y, landmark[tip].z, landmark[mcp].z) > self.control_threshold
+        )
+
+        # closed_thumb = (
+        #     abs(landmark[self.finger_ip[0]].x - landmark[self.finger_ip[1]].x) < self.control_threshold and 
+        #     abs(landmark[self.finger_ip[0]].y - landmark[self.finger_ip[1]].y) < self.control_threshold
+        #     )
+
+        # return folded==3 and open_index_finger
+        return True
     
-    def find_center_palm(self, landmark, frame):
-        mcps_x = [landmark[mcp].x for mcp in self.finger_mcps[2:]]
-        mcps_y = [landmark[mcp].y for mcp in self.finger_mcps[2:]]
-        wrist = landmark[self.wrist]
-
-        cx = (np.sum(mcps_x) + wrist.x) / (len(mcps_x) + 1)
-        cy = (np.sum(mcps_y) + wrist.y) / (len(mcps_y) + 1)
-
-        cv2.circle(frame, (int(cx*self.cam_width), int(cy*self.cam_height)), 20, (255,0,255), -1)
+    def find_control_point(self, landmark, frame):
+        cx, cy = landmark[self.finger_tips[1]].x, landmark[self.finger_tips[1]].y 
+        w, h = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        x, y = int(cx*w), int(cy*h)
+        cv2.circle(frame, (x, y), 20, (255,0,255), -1)
         return cx, cy
     
     def draw_info(self, frame, text):
         cv2.putText(frame, text, (20, 40),
         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    
+    def draw_buttons(self, frame):
+        w, h = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        overlay = frame.copy()
+
+        btn_width = w // 3
+        remainder = w % 3 
+        widths = [btn_width, btn_width, btn_width]
+        for i in range(remainder):
+            widths[i] += 1 
+
+        # Full height split: top (jump), middle (3 buttons), bottom (slide)
+        top_height = h // 6
+        bottom_height = h // 6
+        center_height = h - top_height - bottom_height  # Exact middle height
+
+        # Starting Y positions
+        y_jump = 0
+        y_center = top_height
+        y_slide = h - bottom_height
+
+        # === Jump (top full-width rectangle) ===
+        jump_rect = (0, y_jump, w, y_center)
+        self.buttons_config["Jump"][0] = jump_rect
+        cv2.rectangle(overlay, (0, y_jump), (w, y_center), self.buttons_config["Jump"][1], -1)
+
+        # === Slide (bottom full-width rectangle) ===
+        slide_rect = (0, y_slide, w, h)
+        self.buttons_config["Slide"][0] = slide_rect
+        cv2.rectangle(overlay, (0, y_slide), (w, h), self.buttons_config["Slide"][1], -1)
+
+        # === Left, Center, Right (middle row) ===
+        x_offset = 0
+        for i, name in enumerate(["Left", "Center", "Right"]):
+            x1 = x_offset
+            x2 = x_offset + widths[i]
+            rect = (x1, y_center, x2, y_center + center_height)
+            self.buttons_config[name][0] = rect
+            cv2.rectangle(overlay, (x1, y_center), (x2, y_center + center_height), self.buttons_config[name][1], -1)
+            x_offset = x2  # Next button starts exactly where this one ends
+
+        alpha = 0.3
+        cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+
+        for name, config in self.buttons_config.items():
+            (x1, y1, x2, y2) = config[0]
+            color = config[1]
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            # Center text in button
+            text_size = cv2.getTextSize(name, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+            text_x = x1 + (x2 - x1 - text_size[0]) // 2
+            text_y = y1 + (y2 - y1 + text_size[1]) // 2
+            cv2.putText(frame, name, (text_x, text_y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
     def run(self):
         while True:
@@ -78,42 +141,49 @@ class HandController:
             rgb_frame = cv2.cvtColor(flipped_frame, cv2.COLOR_BGR2RGB)
             result = self.hand.process(rgb_frame)
 
+            hand_frame = flipped_frame.copy()
+            button_frame = flipped_frame.copy()
+
+            self.draw_buttons(button_frame)
+
             if result.multi_hand_landmarks:
                 hand_landmarks = result.multi_hand_landmarks[0]
                 # print(hand_landmarks)
                 self.mp_drawing.draw_landmarks(
-                    flipped_frame, 
+                    hand_frame, 
                     hand_landmarks, 
                     self.mp_hands.HAND_CONNECTIONS, 
                     self.drawing_styles.get_default_hand_landmarks_style(),
                     self.drawing_styles.get_default_hand_connections_style()
                     )
 
-                control_mode = self.check_fist(hand_landmarks.landmark)
-                mode_text = "Fist (Control Mode)" if control_mode else "Open (Idle)"
-                self.draw_info(flipped_frame, mode_text)
+                control_mode = self.check_control(hand_landmarks.landmark)
+                mode_text = "Pointer (Control Mode)" if control_mode else "Open (Idle)"
+                self.draw_info(hand_frame, mode_text)
 
                 if control_mode:
-                    cx, cy = self.find_center_palm(hand_landmarks.landmark, flipped_frame)
-                    if self.prev_center is not None:
-                        dx = cx - self.prev_center[0]
-                        dy = cy - self.prev_center[1]
+                    cx, cy = self.find_control_point(hand_landmarks.landmark, hand_frame)
+                    w, h = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    for name, config in self.buttons_config.items():
+                        if cx > (config[0][0]/w) and cx < (config[0][2]/w) and cy > (config[0][1]/h) and cy < (config[0][3]/h):
+                            self.button_pressed = name
 
-                        if abs(dx) > self.THRES_X:
-                            if dx > 0:
-                                self.move_right()
-                            else:
-                                self.move_left()
-                        
-                        if abs(dy) > self.THRES_Y:
-                            if dy > 0:
-                                self.slide()
-                            else:
-                                self.jump()
+                    match self.button_pressed:
+                        case "Center":
+                            self.middle_lane()
+                        case "Left":
+                            self.left_lane()
+                        case "Right":
+                            self.right_lane()
+                        case 'Jump':
+                            self.jump()
+                        case "Slide":
+                            self.slide()
+                    time.sleep(0.1)
 
-                    self.prev_center = (cx, cy)
+            cv2.imshow(self.window_titles[0], hand_frame)
+            cv2.imshow(self.window_titles[1], button_frame)
 
-            cv2.imshow("Hand Capture", flipped_frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         
@@ -128,12 +198,16 @@ class HandController:
         print("SLIDE!")
         pass
 
-    def move_left(self):
+    def left_lane(self):
         print("GO LEFT!")
         pass
 
-    def move_right(self):
+    def right_lane(self):
         print("GO RIGHT!")
+        pass
+
+    def middle_lane(self):
+        print("GO CENTER")
         pass
 
 
