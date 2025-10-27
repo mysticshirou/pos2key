@@ -7,6 +7,9 @@ from PIL import Image
 from pathlib import Path
 from ultralytics import YOLO
 from transformers import pipeline
+import os
+import shlex
+import subprocess
 
 from pos2key.config import Config
 cfg = Config()
@@ -18,6 +21,88 @@ def draw_gridlines(image, h_thresh: list[int]|tuple[int], v_thresh: list[int]|tu
     image = cv2.line(image, (0, v_thresh[0]), (image.shape[1], v_thresh[0]), colour, 2)
     image = cv2.line(image, (0, v_thresh[1]), (image.shape[1], v_thresh[1]), colour, 2)
     return image
+
+class FrameViewer:
+        def __init__(self, prefer_ffplay: bool = False):
+            # Default to cv2. Enable ffplay if explicitly requested via prefer_ffplay
+            # or via the USE_WAYLAND_VIEWER env var. This keeps default behaviour unchanged.
+            self.backend = "cv2"
+            if prefer_ffplay or os.environ.get("USE_WAYLAND_VIEWER"):
+                self.backend = "ffplay"
+            self.process = None
+            self.width = None
+            self.height = None
+            self.fps = 30
+            self.window_name = "Camera"
+
+        def open(self, width: int, height: int, fps: int = 30, window_name: str = "Camera"):
+            self.width = width
+            self.height = height
+            self.fps = fps
+            self.window_name = window_name
+            if self.backend != "ffplay":
+                return
+
+            cmd = (
+                f"ffplay -f rawvideo -pixel_format bgr24 -video_size {width}x{height}"
+                f" -framerate {fps} -window_title {shlex.quote(window_name)} -i - -hide_banner -loglevel error"
+            )
+            try:
+                # Start ffplay
+                self.process = subprocess.Popen(shlex.split(cmd), stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except FileNotFoundError:
+                print("ffplay not found; falling back to cv2.imshow")
+                self.backend = "cv2"
+
+        def show(self, frame, window_name: str = "Camera"):
+            if self.backend == "cv2":
+                cv2.imshow(window_name, frame)
+                return
+
+            # backend is ffplay
+            if self.process is None or self.process.poll() is not None:
+                # (re)open
+                self.open(frame.shape[1], frame.shape[0], self.fps, window_name)
+            if frame.shape[1] != self.width or frame.shape[0] != self.height:
+                try:
+                    if self.process:
+                        self.process.kill()
+                except Exception:
+                    pass
+                self.open(frame.shape[1], frame.shape[0], self.fps, window_name)
+
+            try:
+                if self.process and self.process.stdin:
+                    self.process.stdin.write(frame.tobytes())
+                    self.process.stdin.flush()
+                else:
+                    # fallback
+                    cv2.imshow(window_name, frame)
+            except Exception:
+                cv2.imshow(window_name, frame)
+
+        def close(self):
+            if self.backend == "cv2":
+                try:
+                    cv2.destroyAllWindows()
+                except Exception:
+                    pass
+                return
+
+            if self.process:
+                try:
+                    if self.process.stdin:
+                        self.process.stdin.close()
+                except Exception:
+                    pass
+                try:
+                    self.process.terminate()
+                    self.process.wait(timeout=1)
+                except Exception:
+                    try:
+                        self.process.kill()
+                    except Exception:
+                        pass
 
 class Tracker:
     def __init__(self, bbox_colour = (0,255,0), grid_colour=(0,0,255), camera_id=0, cls=0):
@@ -97,7 +182,7 @@ class Tracker:
 
         broadcast_fn({"x": x, "y": y})
 
-    def begin_tracking(self, broadcast_fn: types.FunctionType, save=False, show_other_dets=False, fps=30, verbose=False):
+    def begin_tracking(self, broadcast_fn: types.FunctionType, save=False, show_other_dets=False, fps=30, verbose=False, use_wayland_viewer: bool = False):
         """
         Starts real time tracking
         
@@ -112,6 +197,15 @@ class Tracker:
         ret, frame = cap.read()
         assert ret
         video_writer = cv2.VideoWriter(os.path.join(self.output_dir, "tracking_output.mp4"), cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame.shape[1], frame.shape[0]))
+        # Viewer is opt-in: only create if use_wayland_viewer True or explicit env var is set.
+        viewer = None
+        if use_wayland_viewer or os.environ.get("USE_WAYLAND_VIEWER"):
+            try:
+                viewer = FrameViewer(prefer_ffplay=use_wayland_viewer or bool(os.environ.get("USE_WAYLAND_VIEWER")))
+                viewer.open(frame.shape[1], frame.shape[0], fps=fps, window_name='Camera')
+            except Exception as e:
+                print(f"Viewer init failed: {e}")
+
         do_depth_scan = True
         
         while cap.isOpened():
@@ -211,21 +305,34 @@ class Tracker:
             video_writer.write(annotated_frame)
             if verbose: print("Written to video writer")
 
-            cv2.imshow('Camera', annotated_frame)
+            # Show with viewer only if explicitly enabled; otherwise keep default cv2.imshow.
+            if viewer is not None:
+                viewer.show(annotated_frame, window_name='Camera')
+            else:
+                cv2.imshow('Camera', annotated_frame)
 
             if cv2.waitKey(1) == ord('q'):  # Press q to stop live tracking
                 break
 
         cap.release()
         video_writer.release()
+        # Close viewer if used
+        try:
+            if viewer is not None:
+                viewer.close()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
     tracker = Tracker()
 
+    # Use Wayland viewer only when explicitly requested via env var
+    use_viewer_flag = bool(os.environ.get("USE_WAYLAND_VIEWER"))
+
     while True:
         choice = input(">>>")
         if choice == "1":
-            tracker.begin_tracking(broadcast_fn=print, show_other_dets=True)
+            tracker.begin_tracking(broadcast_fn=print, show_other_dets=True, use_wayland_viewer=use_viewer_flag)
         else:
             exit()

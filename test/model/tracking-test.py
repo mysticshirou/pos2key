@@ -9,6 +9,9 @@ import numpy as np
 from PIL import Image
 from ultralytics import YOLO
 from transformers import pipeline
+import os
+import shlex
+import subprocess
 
 pipe = pipeline(task="depth-estimation", model="depth-anything/Depth-Anything-V2-Small-hf")
 model = YOLO("yolo11n.pt")
@@ -32,7 +35,88 @@ def begin_videocapture():
         image = cv2.line(image, (0, v_thresh[1]), (image.shape[1], v_thresh[1]), GRID_COLOUR, 2)
         return image
 
+    class FrameViewer:
+        def __init__(self):
+            self.backend = "cv2"
+            if os.environ.get("WAYLAND_DISPLAY") or os.environ.get("USE_WAYLAND_VIEWER"):
+                self.backend = "ffplay"
+            self.process = None
+            self.width = None
+            self.height = None
+            self.fps = 30
+            self.window_name = "Camera"
+
+        def open(self, width: int, height: int, fps: int = 30, window_name: str = "Camera"):
+            self.width = width
+            self.height = height
+            self.fps = fps
+            self.window_name = window_name
+            if self.backend != "ffplay":
+                return
+
+            cmd = (
+                f"ffplay -f rawvideo -pixel_format bgr24 -video_size {width}x{height}"
+                f" -framerate {fps} -window_title {shlex.quote(window_name)} -i - -hide_banner -loglevel error"
+            )
+            try:
+                # Start ffplay
+                self.process = subprocess.Popen(shlex.split(cmd), stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except FileNotFoundError:
+                print("ffplay not found; falling back to cv2.imshow")
+                self.backend = "cv2"
+
+        def show(self, frame, window_name: str = "Camera"):
+            if self.backend == "cv2":
+                cv2.imshow(window_name, frame)
+                return
+
+            # backend is ffplay
+            if self.process is None or self.process.poll() is not None:
+                # (re)open
+                self.open(frame.shape[1], frame.shape[0], self.fps, window_name)
+            if frame.shape[1] != self.width or frame.shape[0] != self.height:
+                try:
+                    if self.process:
+                        self.process.kill()
+                except Exception:
+                    pass
+                self.open(frame.shape[1], frame.shape[0], self.fps, window_name)
+
+            try:
+                if self.process and self.process.stdin:
+                    self.process.stdin.write(frame.tobytes())
+                    self.process.stdin.flush()
+                else:
+                    # fallback
+                    cv2.imshow(window_name, frame)
+            except Exception:
+                cv2.imshow(window_name, frame)
+
+        def close(self):
+            if self.backend == "cv2":
+                try:
+                    cv2.destroyAllWindows()
+                except Exception:
+                    pass
+                return
+
+            if self.process:
+                try:
+                    if self.process.stdin:
+                        self.process.stdin.close()
+                except Exception:
+                    pass
+                try:
+                    self.process.terminate()
+                    self.process.wait(timeout=1)
+                except Exception:
+                    try:
+                        self.process.kill()
+                    except Exception:
+                        pass
+
     start = True
+    viewer = None
     while cap.isOpened():
         ret, frame = cap.read()
         if start: ret, frame = cap.read()
@@ -42,6 +126,13 @@ def begin_videocapture():
         if start:
             # Initialise video_writer
             video_writer = cv2.VideoWriter('tracking_output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (frame.shape[1], frame.shape[0]))
+
+            # Initialise viewer
+            try:
+                viewer = FrameViewer()
+                viewer.open(frame.shape[1], frame.shape[0], fps=30, window_name='Camera')
+            except Exception as e:
+                print(f"Viewer init failed: {e}")
 
             start_time = time.perf_counter()
             # Depth scan initial frame for gridlines
@@ -142,13 +233,23 @@ def begin_videocapture():
         video_writer.write(annotated_frame)
         print("Written to video writer")
 
-        cv2.imshow('Camera', annotated_frame)
+        # Show with viewer (falls back to cv2.imshow when appropriate)
+        if viewer is not None:
+            viewer.show(annotated_frame, window_name='Camera')
+        else:
+            cv2.imshow('Camera', annotated_frame)
 
         if cv2.waitKey(1) == ord('q'):
             break
 
     cap.release()
     video_writer.release()
+    # Close viewer if used
+    try:
+        if viewer is not None:
+            viewer.close()
+    except Exception:
+        pass
 
 while True:
     choice = int(input(">>>"))
