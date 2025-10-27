@@ -6,6 +6,7 @@ from pos2key.tracking import Tracker
 
 tracker = Tracker()
 tracker.set_grid_offset((0.5, 0.5), (0.5, 0.5))
+tracker.set_model_path("models/yolo11n.pt")
 
 while True:
     choice = input(">>>")

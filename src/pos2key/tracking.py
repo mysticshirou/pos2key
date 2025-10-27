@@ -116,6 +116,7 @@ class Tracker:
         
         while cap.isOpened():
             _, frame = cap.read()
+            frame = cv2.flip(frame, 1)  # Flip frame to fix webcam mirroring
             annotated_frame = frame.copy()
 
             if do_depth_scan:
