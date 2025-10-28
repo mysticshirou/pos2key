@@ -172,14 +172,15 @@ class Tracker:
 
     def check_position(self, broadcast_fn: types.FunctionType, position: tuple[int], h_thresh: list[int]|tuple[int], v_thresh: list[int]|tuple[int]):
         x, y = 0, 0
-        if position[0] > h_thresh[0]: x = -1
-        elif position[0] < h_thresh[1]: x = 1
+        if position[0] > h_thresh[0]: x = 1
+        elif position[0] < h_thresh[1]: x = -1
         else: x = 0
 
         if position[1] > v_thresh[0]: y = -1
         elif position[1] < v_thresh[1]: y = 1
         else: y = 0
 
+        print({"x": x, "y": y})
         broadcast_fn({"x": x, "y": y})
 
     def begin_tracking(self, broadcast_fn: types.FunctionType, save=False, show_other_dets=False, fps=30, verbose=False, use_wayland_viewer: bool = False):
@@ -193,6 +194,7 @@ class Tracker:
             fps: FPS of output video
             verbose: Whether to show ultralytics and other logs
         """
+        print("Started")
         cap = cv2.VideoCapture(self.CAMERA)
         ret, frame = cap.read()
         assert ret

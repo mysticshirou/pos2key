@@ -10,19 +10,22 @@ from time import sleep
 #       X  Y
 #     (-1, 1)
 
-test = SubwaySurfer(Grid.CENTRE_NEUTRAL.value)
-
+test = SubwaySurfer()
+print("ready")
+sleep(5)
 #%%
-test.move_to(Grid.LEFT_ROLL.value)
-test.move_to(Grid.CENTRE_JUMP.value)
-test.move_to(Grid.LEFT_ROLL.value)
-test.move_to(Grid.CENTRE_JUMP.value)
-test.move_to(Grid.LEFT_ROLL.value)
-test.move_to(Grid.CENTRE_JUMP.value)
-test.move_to(Grid.LEFT_ROLL.value)
-test.move_to(Grid.CENTRE_JUMP.value)
-test.move_to(Grid.LEFT_ROLL.value)
-test.move_to(Grid.CENTRE_JUMP.value)
+while True:
+    print(test._moveY(1))
+# test.move_to(Grid.LEFT_ROLL.value)
+# test.move_to(Grid.CENTRE_JUMP.value)
+# test.move_to(Grid.LEFT_ROLL.value)
+# test.move_to(Grid.CENTRE_JUMP.value)
+# test.move_to(Grid.LEFT_ROLL.value)
+# test.move_to(Grid.CENTRE_JUMP.value)
+# test.move_to(Grid.LEFT_ROLL.value)
+# test.move_to(Grid.CENTRE_JUMP.value)
+# test.move_to(Grid.LEFT_ROLL.value)
+# test.move_to(Grid.CENTRE_JUMP.value)
 
 # from subprocess import run, CompletedProcess
 

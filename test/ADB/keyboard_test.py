@@ -25,13 +25,13 @@ def _handle_event(ev: keyboard.KeyboardEvent):
     _last_called[name] = now
 
     if name == "up":
-        jake._moveY(1) # Equivalent to _jump()
+        print(jake._moveY(1)) # Equivalent to _jump()
     elif name == "down":
-        jake._moveY(-1) # Equivalent to _roll()
+        print(jake._moveY(-1)) # Equivalent to _roll()
     elif name == "left":
-        jake._moveX(-1) # Equivalent to _left()
+        print(jake._moveX(-1)) # Equivalent to _left()
     elif name == "right":
-        jake._moveX(1) # Equivalent to _right()
+        print(jake._moveX(1))# Equivalent to _right()
     print(f"{name} pressed")
 
 def main():

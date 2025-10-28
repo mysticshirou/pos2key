@@ -37,16 +37,16 @@ class ADBManager():
         return run(input, shell=True, capture_output=True, text=True)
 
     def _jump(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} shell input swipe 540 1200 540 600 200")
+        return self.shell_run(f"{self.adb_location} -s 127.0.0.1:5555 shell input swipe 540 1200 540 600 200")
 
     def _roll(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} shell input swipe 540 600 540 1200 200")
+        return self.shell_run(f"{self.adb_location} -s 127.0.0.1:5555 shell input swipe 540 600 540 1200 200")
 
     def _left(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} shell input swipe 800 960 200 960 200")
+        return self.shell_run(f"{self.adb_location} -s 127.0.0.1:5555 shell input swipe 800 960 200 960 200")
 
     def _right(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} shell input swipe 200 960 800 960 200")
+        return self.shell_run(f"{self.adb_location} -s 127.0.0.1:5555 shell input swipe 200 960 800 960 200")
 
 
 class Grid(Enum):
@@ -111,7 +111,7 @@ class SubwaySurfer(ADBManager):
 
         # Executes movements
         for _ in range(abs(x_distance_to_travel)):
-            self._moveX(x_distance_to_travel)
+            print(self._moveX(x_distance_to_travel))
             sleep(0.1)
 
         for _ in range(abs(y_distance_to_travel)):
