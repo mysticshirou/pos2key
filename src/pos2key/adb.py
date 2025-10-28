@@ -1,6 +1,5 @@
 from subprocess import run, CompletedProcess
 from enum import Enum
-from time import sleep
 
 class ADBError(Exception):
     # Makes error appear in main namespace (ADBError: <exception> vs classes.ADBError: <exception>)
@@ -107,16 +106,14 @@ class SubwaySurfer(ADBManager):
         # Calculates X & Y distances to travel by finding the difference between the desired and current positions.
         x_distance_to_travel = desired_position["x"] - self.x
         y_distance_to_travel = desired_position["y"] - self.y
-        print(f"Current Pos: {self.x, self.y}, Desired Pos: {desired_position}. X Offset: {x_distance_to_travel}, Y Offset: {y_distance_to_travel}")
+        print(f"Current Pos: {self.x, self.y}, Desired Pos: {desired_position}. X Distance: {x_distance_to_travel}, Y Distance: {y_distance_to_travel}")
 
         # Executes movements
         for _ in range(abs(x_distance_to_travel)):
             print(self._moveX(x_distance_to_travel))
-            sleep(0.1)
 
         for _ in range(abs(y_distance_to_travel)):
             self._moveY(y_distance_to_travel)
-            sleep(0.1)
 
         # Sets desired X position to be the new current positon.
         # Y positon does not need to be set as it auto resolves itself (Character will stop jumping / rolling automatically). 
