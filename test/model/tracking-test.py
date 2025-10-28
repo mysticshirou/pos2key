@@ -14,7 +14,7 @@ import shlex
 import subprocess
 
 pipe = pipeline(task="depth-estimation", model="depth-anything/Depth-Anything-V2-Small-hf")
-model = YOLO("yolo11n.pt")
+model = YOLO("./models/yolo11n.pt")
 
 def begin_videocapture():
     cap = cv2.VideoCapture(0)
@@ -125,7 +125,7 @@ def begin_videocapture():
 
         if start:
             # Initialise video_writer
-            video_writer = cv2.VideoWriter('tracking_output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (frame.shape[1], frame.shape[0]))
+            video_writer = cv2.VideoWriter('./outputs/tracking_output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (frame.shape[1], frame.shape[0]))
 
             # Initialise viewer
             try:
@@ -184,7 +184,7 @@ def begin_videocapture():
                     scan_frame = draw_gridlines(scan_frame, GRID_HORIZONTAL, GRID_VERTICAL)
                     break
 
-            cv2.imwrite("initial_scan.png", scan_frame)
+            cv2.imwrite("./outputs/initial_scan.png", scan_frame)
 
             end_time = time.perf_counter()
             elapsed_time = end_time - start_time

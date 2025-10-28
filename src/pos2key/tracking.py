@@ -167,7 +167,7 @@ class Tracker:
         _, binary_image = cv2.threshold(cv2.cvtColor(clustered_frame, cv2.COLOR_BGR2GRAY), np.max(clustered_frame)-1, 255, cv2.THRESH_BINARY)
 
         masked_frame = cv2.bitwise_and(frame, frame, mask=binary_image)
-        masked_frame = cv2.cvtColor(masked_frame, cv2.COLOR_BGR2RGB)
+        # masked_frame = cv2.cvtColor(masked_frame, cv2.COLOR_BGR2RGB)
         return masked_frame, clustered_frame, binary_image
 
     def check_position(self, broadcast_fn: types.FunctionType, position: tuple[int], h_thresh: list[int]|tuple[int], v_thresh: list[int]|tuple[int]):
@@ -255,7 +255,9 @@ class Tracker:
                 
                 if save: 
                     segmented = cv2.rectangle(segmented, (x1, y1), (x2, y2), self.BBOX_COLOUR, 2)
+                    segmented = cv2.circle(segmented, center, 5, self.BBOX_COLOUR, 2) 
                     segmented = draw_gridlines(segmented, GRID_HORIZONTAL, GRID_VERTICAL)
+
                     cv2.imwrite(os.path.join(self.output_dir, "initial_scan.png"), annotated_frame)
                     cv2.imwrite(os.path.join(self.output_dir, "masked_scan.png"), segmented)
                     print(f"Saved to {os.path.join(self.output_dir, 'initial_scan.png')}")
@@ -266,7 +268,7 @@ class Tracker:
                 continue
 
             # Run YOLO tracking on the frame
-            results = self.tracking_model.track(frame, persist=True, conf=0.3, iou=0.5, verbose=verbose)
+            results = self.tracking_model.track(frame, persist=True, conf=0.1, iou=0.5, verbose=verbose)
             annotated_frame = frame.copy()
             annotated_frame = draw_gridlines(annotated_frame, GRID_HORIZONTAL, GRID_VERTICAL)
 
@@ -333,6 +335,6 @@ if __name__ == "__main__":
     while True:
         choice = input(">>>")
         if choice == "1":
-            tracker.begin_tracking(broadcast_fn=print, show_other_dets=True, use_wayland_viewer=use_viewer_flag)
+            tracker.begin_tracking(broadcast_fn=print, save=True, show_other_dets=True, use_wayland_viewer=use_viewer_flag)
         else:
             exit()
