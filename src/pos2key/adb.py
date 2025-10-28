@@ -17,6 +17,7 @@ class ADBManager():
         When both are successful, android emulator can be controlled.
         """
         self.adb_location = adb_location
+        self.adb_endpoint = adb_endpoint
 
         connection = self.shell_run(f"{self.adb_location} connect {adb_endpoint}")
         if "No connection could be made" in connection.stdout.strip():
@@ -36,17 +37,22 @@ class ADBManager():
         return run(input, shell=True, capture_output=True, text=True)
 
     def _jump(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} -s 127.0.0.1:5555 shell input swipe 540 1200 540 600 200")
+        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input swipe 540 1200 540 600 200")
 
     def _roll(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} -s 127.0.0.1:5555 shell input swipe 540 600 540 1200 200")
+        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input swipe 540 600 540 1200 200")
 
     def _left(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} -s 127.0.0.1:5555 shell input swipe 800 960 200 960 200")
+        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input swipe 800 960 200 960 200")
 
     def _right(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} -s 127.0.0.1:5555 shell input swipe 200 960 800 960 200")
+        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input swipe 200 960 800 960 200")
 
+    def pause(self) -> CompletedProcess:
+        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input tap 65 135")
+    
+    def resume(self) -> CompletedProcess:
+        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input tap 672 1460")
 
 class Grid(Enum):
     """
