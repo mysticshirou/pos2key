@@ -53,20 +53,57 @@ export default {
       .catch(err => console.error("Failed to load game scripts:", err));
 
 
-    // --- 3️⃣ Ensure keyboard focus works (important for gameplay) ---
-    const observer = new MutationObserver(() => {
-      const canvas = this.$refs.unityContainer.querySelector("canvas");
-      if (canvas && !canvas.hasAttribute("tabindex")) {
-        canvas.setAttribute("tabindex", "0");
-        canvas.focus();
+    // --- 3️⃣ Watch for the game container to be added to the body, then move it ---
+    this.observer = new MutationObserver((mutationsList, obs) => {
+      for (const mutation of mutationsList) {
+        if (mutation.type === 'childList') {
+          for (const node of mutation.addedNodes) {
+            // The loader script adds a div with id 'game-container' to the document body
+            if (node.id === 'game-container') {
+              // Move the game container from the body into our Vue component
+              this.$refs.unityContainer.appendChild(node);
+
+              // Now that the container is moved, we need to watch for the canvas inside it
+              const canvasObserver = new MutationObserver(() => {
+                const canvas = node.querySelector('canvas');
+                if (canvas) {
+                  // Ensure canvas can get keyboard focus for gameplay
+                  if (!canvas.hasAttribute('tabindex')) {
+                    canvas.setAttribute('tabindex', '0');
+                  }
+                  canvas.focus();
+                  // Stop observing once the canvas is found and configured
+                  canvasObserver.disconnect();
+                }
+              });
+
+              // Start observing the moved #game-container for the canvas to be added
+              canvasObserver.observe(node, { childList: true, subtree: true });
+              this.canvasObserver = canvasObserver;
+
+              // Stop observing the body, our main job is done
+              obs.disconnect();
+              return;
+            }
+          }
+        }
       }
     });
-    observer.observe(this.$refs.unityContainer, { childList: true, subtree: true });
+
+    // Start observing the document body for new elements
+    this.observer.observe(document.body, { childList: true });
   },
   beforeUnmount() {
-    // --- 4️⃣ Clean up the <base> tag --- 
+    // --- 4️⃣ Clean up the <base> tag and observers --- 
     if (this.baseElement) {
       document.head.removeChild(this.baseElement);
+    }
+    // Disconnect observers to prevent memory leaks
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+    if (this.canvasObserver) {
+      this.canvasObserver.disconnect();
     }
   }
 };
@@ -74,6 +111,7 @@ export default {
 
 <style scoped>
 #unity-container {
+  width: 100%;
   width: 100%;
   height: 100vh;
   background: #000;
