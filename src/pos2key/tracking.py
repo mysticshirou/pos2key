@@ -170,7 +170,7 @@ class Tracker:
         # masked_frame = cv2.cvtColor(masked_frame, cv2.COLOR_BGR2RGB)
         return masked_frame, clustered_frame, binary_image
 
-    def check_position(self, broadcast_fn: types.FunctionType, position: tuple[int], h_thresh: list[int]|tuple[int], v_thresh: list[int]|tuple[int]):
+    def check_position(self, broadcast_fn: types.Callable, position: tuple[int], h_thresh: list[int]|tuple[int], v_thresh: list[int]|tuple[int]):
         x, y = 0, 0
         if position[0] > h_thresh[0]: x = 1
         elif position[0] < h_thresh[1]: x = -1
@@ -183,7 +183,10 @@ class Tracker:
         print({"x": x, "y": y})
         broadcast_fn({"x": x, "y": y})
 
-    def begin_tracking(self, broadcast_fn: types.FunctionType, save=False, show_other_dets=False, fps=30, verbose=False, use_wayland_viewer: bool = False):
+    def game_pause_event(self, broadcast_fn: types.Callable, pause: bool):
+        broadcast_fn({"pause": pause})
+
+    def begin_tracking(self, broadcast_fn: types.Callable, save=False, show_other_dets=False, fps=30, verbose=False, use_wayland_viewer: bool = False):
         """
         Starts real time tracking
         
@@ -216,6 +219,7 @@ class Tracker:
             annotated_frame = frame.copy()
 
             if do_depth_scan:
+                self.game_pause_event(broadcast_fn=broadcast_fn, pause=True)
                 s = time.perf_counter()
                 segmented, _, _ = self.depth_scan(annotated_frame)
                 results = self.tracking_model.track(segmented, persist=True, conf=0.1, verbose=verbose)
@@ -267,6 +271,7 @@ class Tracker:
                 e = time.perf_counter()
                 print(f"Depth scan runtime: {e-s:.6f} seconds")
                 do_depth_scan = False
+                self.game_pause_event(broadcast_fn=broadcast_fn, pause=False)
                 continue
 
             # Run YOLO tracking on the frame
