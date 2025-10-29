@@ -6,7 +6,6 @@ from pos2key.tracking import Tracker
 from pos2key.adb import SubwaySurfer
 
 tracker = Tracker()
-tracker.set_grid_offset((0.5, 0.5), (0.5, 0.5))
 tracker.set_model_path("./models/yolo11n.pt")
 
 subway_surfer = SubwaySurfer()
@@ -23,6 +22,6 @@ def event_parser(event: dict):
 while True:
     choice = input(">>>")
     if choice == "1":
-        tracker.begin_tracking(broadcast_fn=subway_surfer.move_to, show_other_dets=True, use_wayland_viewer=False)
+        tracker.begin_tracking(broadcast_fn=event_parser, show_other_dets=True, use_wayland_viewer=False)
     else:
         exit()
