@@ -1,5 +1,4 @@
 import { fileURLToPath, URL } from 'node:url'
-
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
@@ -12,7 +11,18 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
+  },
+  server: {
+    // ✅ Ensure Unity WebGL assets load with correct MIME types
+    mimeTypes: {
+      'application/wasm': ['wasm'],
+      'application/octet-stream': ['unityweb'],
+    },
+  },
+  build: {
+    // ✅ Keep file names stable and prevent Vite from touching /public assets
+    assetsDir: 'assets',
   },
 })
