@@ -1,7 +1,7 @@
 import os
 import cv2
 import time
-import types
+import typing
 import numpy as np
 from PIL import Image
 from pathlib import Path
@@ -170,7 +170,7 @@ class Tracker:
         # masked_frame = cv2.cvtColor(masked_frame, cv2.COLOR_BGR2RGB)
         return masked_frame, clustered_frame, binary_image
 
-    def check_position(self, broadcast_fn: types.Callable, position: tuple[int], h_thresh: list[int]|tuple[int], v_thresh: list[int]|tuple[int]):
+    def check_position(self, broadcast_fn: typing.Callable, position: tuple[int], h_thresh: list[int]|tuple[int], v_thresh: list[int]|tuple[int]):
         x, y = 0, 0
         if position[0] > h_thresh[0]: x = 1
         elif position[0] < h_thresh[1]: x = -1
@@ -183,10 +183,10 @@ class Tracker:
         print({"x": x, "y": y})
         broadcast_fn({"x": x, "y": y})
 
-    def game_pause_event(self, broadcast_fn: types.Callable, pause: bool):
+    def game_pause_event(self, broadcast_fn: typing.Callable, pause: bool):
         broadcast_fn({"pause": pause})
 
-    def begin_tracking(self, broadcast_fn: types.Callable, save=False, show_other_dets=False, fps=30, verbose=False, use_wayland_viewer: bool = False):
+    def begin_tracking(self, broadcast_fn: typing.Callable, save: bool=False, show_other_dets: bool=False, fps: int=30, verbose=False, use_wayland_viewer: bool=False, fixed_center: bool=True):
         """
         Starts real time tracking
         
@@ -196,6 +196,8 @@ class Tracker:
             show_other_dets: Whether to show other detections that the tracker is not focused on
             fps: FPS of output video
             verbose: Whether to show ultralytics and other logs
+            use_wayland_viewer: idk
+            fixed_center: Use center of webcam or center of initial bbox
         """
         print("Started")
         cap = cv2.VideoCapture(self.CAMERA)
@@ -229,7 +231,10 @@ class Tracker:
                         x1, y1, x2, y2 = map(int, det.xyxy[0])
                         TRACKING_ID = int(det.id.item()) if det.id is not None else -1  # Track ID
                         conf = det.conf.item()      # Confidence score
-                        center = (int((x2-x1) / 2 + x1), int((y2-y1) / 2 + y1))
+                        if fixed_center: 
+                            center = (int(annotated_frame.shape[1]/2), int(annotated_frame.shape[0]/2))
+                            print(center, annotated_frame.shape)
+                        else: center = (int((x2-x1) / 2 + x1), int((y2-y1) / 2 + y1))
 
                         annotated_frame = cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), self.BBOX_COLOUR, 2)     # Bounding box drawing
                         overlay = frame.copy()                                                                        # 
@@ -325,6 +330,7 @@ class Tracker:
 
         cap.release()
         video_writer.release()
+
         # Close viewer if used
         try:
             if viewer is not None:
