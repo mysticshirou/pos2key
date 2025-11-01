@@ -1,0 +1,51 @@
+name: Copy Vue Dist for Flask
+
+on:
+  workflow_run:
+    workflows: ["Build Vue project"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+env:
+  TARGET_BRANCH: 'main'
+  TARGET_FOLDER: 'flask/vue_dist'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vue-dist
+          path: ./temp_dist
+
+      - name: Copy dist into target folder
+        run: |
+          mkdir -p ${{ env.TARGET_FOLDER }}
+          rm -rf ${{ env.TARGET_FOLDER }}/*
+          cp -r ./temp_dist/* ${{ env.TARGET_FOLDER }}/
+          ls -la ${{ env.TARGET_FOLDER }}
+
+      - name: Commit & push updated dist
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ${{ env.TARGET_FOLDER }}
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update ${TARGET_FOLDER} from build artifact"
+            git push origin HEAD:${{ env.TARGET_BRANCH }}
+          fi
