@@ -83,7 +83,7 @@ export default {
                   const canvas = node.querySelector('canvas');
                   if (canvas) {
                     if (!canvas.hasAttribute('tabindex')) {
-                      canvas.setAttribute('tabindex', '0');
+                      canvas.setAttribute('tabindex', '-1');
                     }
                     canvas.focus();
                     canvasObserver.disconnect();
@@ -126,11 +126,10 @@ export default {
 
 <style>
 #unity-container {
-  max-width: 1632px; /* When this is exceeded, a weird gray screen artifact starts appearing*/
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  /* max-width: 1632px; When this is exceeded, a weird gray screen artifact starts appearing */
+  height: 100%;
   background: black;
-  overflow: hidden;
 }
 
 #spinner {
@@ -141,5 +140,10 @@ export default {
   width: 100% !important;
   height: 100% !important;
   z-index: 1;
+}
+
+:hover, :active, :focus{
+  outline: 0;
+  outline: none;
 }
 </style>
