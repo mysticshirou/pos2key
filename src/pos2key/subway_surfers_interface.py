@@ -1,58 +1,44 @@
-from subprocess import run, CompletedProcess
+from flask_socketio import SocketIO, emit
 from enum import Enum
 
-class ADBError(Exception):
-    # Makes error appear in main namespace (ADBError: <exception> vs classes.ADBError: <exception>)
+class KeyboardEventError(Exception):
+    # Makes error appear in main namespace (KeyboardEventError: <exception> vs classes.KeyboardEventError: <exception>)
     __module__ = "__main__"
 
     def __init__(self, error_message: str) -> None:
         # Prints error message received
         super().__init__(error_message)
 
-class ADBManager():
-    def __init__(self, adb_endpoint: str = "127.0.0.1:5555", adb_location: str = r"ADB\adb.exe") -> None:
+class KeyboardEventManager():
+    def __init__(self, flask_app) -> None:
         """
-        Connects to the open ADB port with "adb connect <endpoint>".
-        Checks if connection is successful with "adb devices".
-        When both are successful, android emulator can be controlled.
+        Initialise SocketIO connection
         """
-        self.adb_location = adb_location
-        self.adb_endpoint = adb_endpoint
+        self.socketio = SocketIO(flask_app)
 
-        connection = self.shell_run(f"{self.adb_location} connect {adb_endpoint}")
-        if "No connection could be made" in connection.stdout.strip():
-            raise ADBError(connection.stdout)
-        else: print(fr"ADB {connection.stdout}") # should see "ADB connected to 127.0.0.1:5555"
+    def _jump(self) -> str:
+        self.socketio.emit('triggerKeyboard', {'action': 'jump'})
+        return "Jump"
 
-        devices = self.shell_run(f"{self.adb_location} devices")
-        if len(devices.stdout.strip().splitlines()) <= 1:
-            raise ADBError(f"No android emulators detected. \nstdout: {devices.stdout}")
-        else: print("ADB ready")
+    def _roll(self) -> str:
+        self.socketio.emit('triggerKeyboard', {'action': 'roll'})
+        return "Roll"
 
-    @staticmethod
-    def shell_run(input: str) -> CompletedProcess:
-        """
-        Wrapper for subprocess.run(), so that its arguements can be centrally controlled (and code looks cleaner cause DRY).
-        """
-        return run(input, shell=True, capture_output=True, text=True)
+    def _left(self) -> str:
+        self.socketio.emit('triggerKeyboard', {'action': 'left'})
+        return "Left"
 
-    def _jump(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input swipe 540 1200 540 600 200")
+    def _right(self) -> str:
+        self.socketio.emit('triggerKeyboard', {'action': 'right'})
+        return "Right"
 
-    def _roll(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input swipe 540 600 540 1200 200")
-
-    def _left(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input swipe 800 960 200 960 200")
-
-    def _right(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input swipe 200 960 800 960 200")
-
-    def pause(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input tap 65 135")
+    def pause(self) -> str:
+        self.socketio.emit('triggerKeyboard', {'action': 'pause'})
+        return "Pause"
     
-    def resume(self) -> CompletedProcess:
-        return self.shell_run(f"{self.adb_location} -s {self.adb_endpoint} shell input tap 672 1460")
+    def resume(self) -> str:
+        self.socketio.emit('triggerKeyboard', {'action': 'resume'})
+        return "Resume"
 
 class Grid(Enum):
     """
@@ -75,22 +61,22 @@ class Grid(Enum):
     CENTRE_ROLL = {"x": 0, "y": -1}
     RIGHT_ROLL = {"x": 1, "y": -1}
 
-class SubwaySurfer(ADBManager):
-    def __init__(self, position: dict[str, int] = Grid.CENTRE_NEUTRAL.value) -> None:
-        super().__init__()
+class SubwaySurfer(KeyboardEventManager):
+    def __init__(self, flask_app, position: dict[str, int] = Grid.CENTRE_NEUTRAL.value) -> None:
+        super().__init__(flask_app)
 
         # Initialise default character position (In the centre column, neutral position = CENTRE_NEUTRAL)
         self.x = position["x"]
         self.y = position["y"]
 
-    def _moveX(self, x_distance: int) -> CompletedProcess:
+    def _moveX(self, x_distance: int) -> str:
         """
         Determines the X direction by checking whether x_distance is positive or negative. 
         """
         print("right"  if x_distance >= 0 else "left")
         return self._right() if x_distance >= 0 else self._left()
     
-    def _moveY(self, y_distance: int) -> CompletedProcess:
+    def _moveY(self, y_distance: int) -> str:
         """
         Determines the Y direction by checking whether x_distance is positive or negative. 
         """
