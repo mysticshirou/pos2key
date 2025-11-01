@@ -3,7 +3,7 @@
 
 import keyboard
 import time
-from pos2key.adb import SubwaySurfer
+from pos2key.subway_surfers_interface import SubwaySurfer
 
 # debounce interval in seconds (avoid firing repeatedly while holding)
 DEBOUNCE = 0.15

@@ -1,5 +1,5 @@
 #%%
-from pos2key.adb import SubwaySurfer, Grid
+from pos2key.subway_surfers_interface import SubwaySurfer, Grid
 from time import sleep
 
 #           Left   Centre   Right

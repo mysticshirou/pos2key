@@ -3,7 +3,7 @@ Input 1 to start live tracking after all models are loaded to start the tracking
 Tracking auto reselects using the depth scan when the target is lost.
 """
 from pos2key.tracking import Tracker
-from pos2key.adb import SubwaySurfer
+from pos2key.subway_surfers_interface import SubwaySurfer
 from time import perf_counter
 
 tracker = Tracker()
