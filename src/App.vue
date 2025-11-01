@@ -10,11 +10,39 @@
 </template>
 
 <script>
+import { io } from 'socket.io-client'
 import Camera from './components/Camera.vue';
 import SubwaySurfers from './components/SubwaySurfers.vue';
 
   export default {
-    components: { SubwaySurfers, Camera }
+    components: { SubwaySurfers, Camera },
+    data() {
+      return {
+        socket: null
+      }
+    },
+    methods: {
+      simulateKeyPress(key, code, keyCode) {
+        const down = new KeyboardEvent('keydown', { key, code, keyCode, bubbles: true });
+        const up = new KeyboardEvent('keyup', { key, code, keyCode, bubbles: true });
+        document.dispatchEvent(down);
+        document.dispatchEvent(up);
+      }
+    },
+    mounted() {
+      // Initialise SocketIO Client
+      this.socket = io('http://127.0.0.1:5000')
+
+      // Listen for Flask events
+      this.socket.on('triggerKeyboard', (data) => {
+        console.log('Event received:', data)
+        this.simulateKeyPress(data.key, data.key, data.code)
+      })
+    },
+    beforeUnmount() {
+      // Clean up the listener when the component is destroyed
+      this.off('triggerKeyboard')
+    }
   }
 </script>
 
