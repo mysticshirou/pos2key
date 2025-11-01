@@ -65,21 +65,30 @@ export default {
 
               // The #game-container is the main element, which will contain the canvas
               if (node.id === 'game-container') {
-                // Now that the container is moved, we need to watch for the canvas inside it
+                // --- 4️⃣ Inject a style tag to override game's !important styles ---
+                const styleTag = document.createElement('style');
+                styleTag.id = 'game-style-override';
+                styleTag.innerHTML = `
+                  #game-container {
+                    position: static !important;
+                    margin-left: 0 !important;
+                    margin-top: 0 !important;
+                  }
+                `;
+                document.head.appendChild(styleTag);
+                this.styleTag = styleTag;
+
+                // We still need to watch for the canvas to do one-time setup.
                 const canvasObserver = new MutationObserver(() => {
                   const canvas = node.querySelector('canvas');
                   if (canvas) {
-                    // Ensure canvas can get keyboard focus for gameplay
                     if (!canvas.hasAttribute('tabindex')) {
                       canvas.setAttribute('tabindex', '0');
                     }
                     canvas.focus();
-                    // Stop observing once the canvas is found and configured
                     canvasObserver.disconnect();
                   }
                 });
-
-                // Start observing the moved #game-container for the canvas to be added
                 canvasObserver.observe(node, { childList: true, subtree: true });
                 this.canvasObserver = canvasObserver;
 
@@ -101,26 +110,36 @@ export default {
     if (this.baseElement) {
       document.head.removeChild(this.baseElement);
     }
-    // Disconnect observers to prevent memory leaks
+    // Disconnect observers and remove injected styles to prevent memory leaks
     if (this.observer) {
       this.observer.disconnect();
     }
     if (this.canvasObserver) {
       this.canvasObserver.disconnect();
     }
+    if (this.styleTag) {
+      document.head.removeChild(this.styleTag);
+    }
   }
 };
 </script>
 
-<style scoped>
+<style>
 #unity-container {
   width: 100vw;
+  max-width: 1632px; /* When this is exceeded, a weird gray screen artifact starts appearing*/
   height: 100vh;
-  background: #000;
+  background: black;
   overflow: hidden;
 }
 
-#slideshow {
-  width: 100vw;
+#spinner {
+  position: absolute;
+}
+
+#game-container, #game, #canvas {
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1;
 }
 </style>
