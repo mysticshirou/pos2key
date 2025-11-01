@@ -1,19 +1,20 @@
 <template>
   <div class="app">
+    <div class="webcam-container">
+      <Camera/>
+    </div>
     <div class="game-container">
       <SubwaySurfers/>
-    </div>
-    <div class="webcam-container">
-
     </div>
   </div>
 </template>
 
 <script>
+import Camera from './components/Camera.vue';
 import SubwaySurfers from './components/SubwaySurfers.vue';
 
   export default {
-    components: { SubwaySurfers }
+    components: { SubwaySurfers, Camera }
   }
 </script>
 
@@ -40,9 +41,10 @@ import SubwaySurfers from './components/SubwaySurfers.vue';
     width: 35%; /* .app (100%) = .webcam-container (35%) + column-gap (5%) + .game-container (60%)*/
     height: 100%;
 
-    border: 3px blue solid;
+    /* border: 3px blue solid; */
     border-radius: 8px;
     box-shadow: 0 0 16px #aaaaaa;
+    overflow: hidden;
   }
 
   .game-container {
