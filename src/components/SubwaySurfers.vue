@@ -53,37 +53,40 @@ export default {
       .catch(err => console.error("Failed to load game scripts:", err));
 
 
-    // --- 3️⃣ Watch for the game container to be added to the body, then move it ---
+    // --- 3️⃣ Watch for game elements to be added to the body, then move them ---
     this.observer = new MutationObserver((mutationsList, obs) => {
       for (const mutation of mutationsList) {
         if (mutation.type === 'childList') {
           for (const node of mutation.addedNodes) {
-            // The loader script adds a div with id 'game-container' to the document body
-            if (node.id === 'game-container') {
-              // Move the game container from the body into our Vue component
+            // The loader script adds elements like #game-container, #spinner, and #loader to the document body
+            if (node.id === 'game-container' || node.id === 'spinner' || node.id === 'loader') {
+              // Move the element from the body into our Vue component
               this.$refs.unityContainer.appendChild(node);
 
-              // Now that the container is moved, we need to watch for the canvas inside it
-              const canvasObserver = new MutationObserver(() => {
-                const canvas = node.querySelector('canvas');
-                if (canvas) {
-                  // Ensure canvas can get keyboard focus for gameplay
-                  if (!canvas.hasAttribute('tabindex')) {
-                    canvas.setAttribute('tabindex', '0');
+              // The #game-container is the main element, which will contain the canvas
+              if (node.id === 'game-container') {
+                // Now that the container is moved, we need to watch for the canvas inside it
+                const canvasObserver = new MutationObserver(() => {
+                  const canvas = node.querySelector('canvas');
+                  if (canvas) {
+                    // Ensure canvas can get keyboard focus for gameplay
+                    if (!canvas.hasAttribute('tabindex')) {
+                      canvas.setAttribute('tabindex', '0');
+                    }
+                    canvas.focus();
+                    // Stop observing once the canvas is found and configured
+                    canvasObserver.disconnect();
                   }
-                  canvas.focus();
-                  // Stop observing once the canvas is found and configured
-                  canvasObserver.disconnect();
-                }
-              });
+                });
 
-              // Start observing the moved #game-container for the canvas to be added
-              canvasObserver.observe(node, { childList: true, subtree: true });
-              this.canvasObserver = canvasObserver;
+                // Start observing the moved #game-container for the canvas to be added
+                canvasObserver.observe(node, { childList: true, subtree: true });
+                this.canvasObserver = canvasObserver;
 
-              // Stop observing the body, our main job is done
-              obs.disconnect();
-              return;
+                // Stop observing the body, our main job is done
+                obs.disconnect();
+                return;
+              }
             }
           }
         }
@@ -94,7 +97,7 @@ export default {
     this.observer.observe(document.body, { childList: true });
   },
   beforeUnmount() {
-    // --- 4️⃣ Clean up the <base> tag and observers --- 
+    // --- 4️⃣ Clean up the <base> tag and observers ---
     if (this.baseElement) {
       document.head.removeChild(this.baseElement);
     }
@@ -111,10 +114,13 @@ export default {
 
 <style scoped>
 #unity-container {
-  width: 100%;
-  width: 100%;
+  width: 100vw;
   height: 100vh;
   background: #000;
   overflow: hidden;
+}
+
+#slideshow {
+  width: 100vw;
 }
 </style>
