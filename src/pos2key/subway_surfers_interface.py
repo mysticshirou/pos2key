@@ -35,6 +35,10 @@ class KeyboardEventManager():
     def toggle_pause(self) -> str:
         self.socketio.emit('triggerKeyboard', {'key': 'Escape', "code": 27})
         return "Pause"
+    
+    def start_game(self) -> str:
+        self.socketio.emit('triggerKeyboard', {'key': 'Enter', "code": 13})
+        return "Pause"
 
 class Grid(Enum):
     """
@@ -64,6 +68,9 @@ class SubwaySurfer(KeyboardEventManager):
         # Initialise default character position (In the centre column, neutral position = CENTRE_NEUTRAL)
         self.x = position["x"]
         self.y = position["y"]
+
+    def run(self, app, host='0.0.0.0', port=5000):
+        self.socketio.run(app, host, port)
 
     def _moveX(self, x_distance: int) -> str:
         """
