@@ -1,22 +1,46 @@
-name: Copy Vue Dist for Flask
+name: Build and Deploy Vue App
 
 on:
-  workflow_run:
-    workflows: ["Build Vue App"]
-    types:
-      - completed
+  push:
+    branches:
+      - 'vue-frontend'
 
 permissions:
   contents: write
 
 env:
+  DIST_DIR: 'dist'
   TARGET_BRANCH: 'main'
   TARGET_FOLDER: 'flask/vue_dist'
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (Vite)
+        run: npm run build
+
+      - name: Upload dist as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vue-dist
+          path: ${{ env.DIST_DIR }}
+
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: build
 
     steps:
       - name: Checkout target branch
@@ -46,6 +70,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: update ${TARGET_FOLDER} from build artifact"
+            git commit -m "chore: update ${{ env.TARGET_FOLDER }} from build artifact"
             git push origin HEAD:${{ env.TARGET_BRANCH }}
           fi
