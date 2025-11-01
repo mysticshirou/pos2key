@@ -87,7 +87,7 @@ export default {
                   const canvas = node.querySelector('canvas');
                   if (canvas) {
                     if (!canvas.hasAttribute('tabindex')) {
-                      canvas.setAttribute('tabindex', '-1');
+                      canvas.setAttribute('tabindex', '0');
                     }
                     canvas.focus();
                     canvasObserver.disconnect();

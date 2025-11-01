@@ -4,7 +4,7 @@
       <Camera/>
     </div>
     <div class="game-container">
-      <SubwaySurfers/>
+      <SubwaySurfers ref="subwaySurfers"/>
     </div>
   </div>
 </template>
@@ -23,10 +23,13 @@ import SubwaySurfers from './components/SubwaySurfers.vue';
     },
     methods: {
       simulateKeyPress(key, code, keyCode) {
+        const canvas = this.$refs.subwaySurfers.$refs.unityContainer.querySelector('canvas');
+        if (!canvas) return;
+
         const down = new KeyboardEvent('keydown', { key, code, keyCode, bubbles: true });
         const up = new KeyboardEvent('keyup', { key, code, keyCode, bubbles: true });
-        document.dispatchEvent(down);
-        document.dispatchEvent(up);
+        canvas.dispatchEvent(down);
+        canvas.dispatchEvent(up);
       }
     },
     mounted() {
