@@ -126,8 +126,8 @@ export default {
 
 <style>
 #unity-container {
-  width: 100vw;
   max-width: 1632px; /* When this is exceeded, a weird gray screen artifact starts appearing*/
+  width: 100vw;
   height: 100vh;
   background: black;
   overflow: hidden;
