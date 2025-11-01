@@ -17,28 +17,24 @@ class KeyboardEventManager():
         self.socketio = SocketIO(flask_app)
 
     def _jump(self) -> str:
-        self.socketio.emit('triggerKeyboard', {'action': 'jump'})
+        self.socketio.emit('triggerKeyboard', {'key': 'ArrowUp', "code": 37})
         return "Jump"
 
     def _roll(self) -> str:
-        self.socketio.emit('triggerKeyboard', {'action': 'roll'})
+        self.socketio.emit('triggerKeyboard', {'key': 'ArrowDown', "code": 38})
         return "Roll"
 
     def _left(self) -> str:
-        self.socketio.emit('triggerKeyboard', {'action': 'left'})
+        self.socketio.emit('triggerKeyboard', {'key': 'ArrowLeft', "code": 40})
         return "Left"
 
     def _right(self) -> str:
-        self.socketio.emit('triggerKeyboard', {'action': 'right'})
+        self.socketio.emit('triggerKeyboard', {'key': 'ArrowRight', "code": 39})
         return "Right"
 
-    def pause(self) -> str:
-        self.socketio.emit('triggerKeyboard', {'action': 'pause'})
+    def toggle_pause(self) -> str:
+        self.socketio.emit('triggerKeyboard', {'key': 'Escape', "code": 27})
         return "Pause"
-    
-    def resume(self) -> str:
-        self.socketio.emit('triggerKeyboard', {'action': 'resume'})
-        return "Resume"
 
 class Grid(Enum):
     """
