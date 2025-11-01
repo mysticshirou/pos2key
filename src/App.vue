@@ -36,6 +36,14 @@ import SubwaySurfers from './components/SubwaySurfers.vue';
       // Initialise SocketIO Client
       this.socket = io('http://127.0.0.1:5000')
 
+      this.socket.on('connect', () => {
+        console.log('Connected to server');
+      });
+
+      this.socket.on('connect_error', (err) => {
+        console.error('Connection error:', err);
+      });
+
       // Listen for Flask events
       this.socket.on('triggerKeyboard', (data) => {
         console.log('Event received:', data)
