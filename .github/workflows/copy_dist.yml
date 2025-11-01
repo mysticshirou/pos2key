@@ -2,7 +2,7 @@ name: Copy Vue Dist for Flask
 
 on:
   workflow_run:
-    workflows: ["Build Vue project"]
+    workflows: ["Build Vue App"]
     types:
       - completed
 
