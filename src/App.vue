@@ -1,7 +1,9 @@
 <template>
   <div class="app">
-    <div class="webcam"></div>
-    <div class="game">
+    <div class="webcam-container">
+      
+    </div>
+    <div class="game-container">
       <SubwaySurfers/>
     </div>
   </div>
@@ -33,19 +35,19 @@ import SubwaySurfers from './components/SubwaySurfers.vue';
     background-size: 40px 40px;
   }
 
-  .webcam {
+  .webcam-container {
     /* background: red; */
     width: 40%;
     height: 100%;
   }
 
-  .game {
+  .game-container {
     /* background: blue; */
     width: 60%;
     height: 100%;
 
     border-radius: 8px;
-    box-shadow: 0 0 20px #aaaaaa;
+    box-shadow: 0 0 16px #aaaaaa;
     overflow: hidden;
   }
 </style>

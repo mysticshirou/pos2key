@@ -74,6 +74,10 @@ export default {
                     margin-left: 0 !important;
                     margin-top: 0 !important;
                   }
+
+                  .spinner {
+                      transform: translate(28vw, 50vh);
+                  }
                 `;
                 document.head.appendChild(styleTag);
                 this.styleTag = styleTag;
@@ -130,6 +134,7 @@ export default {
   /* max-width: 1632px; When this is exceeded, a weird gray screen artifact starts appearing */
   height: 100%;
   background: black;
+  position: relative;
 }
 
 #spinner {
