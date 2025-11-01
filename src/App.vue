@@ -34,7 +34,7 @@ import SubwaySurfers from './components/SubwaySurfers.vue';
     },
     mounted() {
       // Initialise SocketIO Client
-      this.socket = io('http://127.0.0.1:5000')
+      this.socket = io('http://127.0.0.1:5000', { transports: ['websocket'] })
 
       this.socket.on('connect', () => {
         console.log('Connected to server');
