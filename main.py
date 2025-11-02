@@ -7,16 +7,16 @@ import math
 import numpy as np
 
 class HandController:
-    def __init__(self, width=600, height=500, control_threshold=0.06, thres_x=0.1, thres_y=0.1):
+    def __init__(self, width=600, height=500, control_threshold=0.06):
         self.control_mode = False
         self.control_threshold = control_threshold
-        self.THRES_X = thres_x
-        self.THRES_Y = thres_y
-        self.prev_center = None
 
         self.window_titles = ["Hand Capture", "Virtual Buttons"]
-        self.button_pressed = "Center"
-        self.buttons_config = {"Left": [None, (255, 0, 0)], "Center": [None, (0, 255, 0)], "Right": [None, (0, 0, 255)], "Jump": [None, (255, 255, 0)], "Slide": [None, (255, 0, 255)]}
+        self.lane = "Center"
+        self.action = "Neutral"
+        self.lane_list = ("Left", "Center", "Right")
+        self.action_list = ("Jump", "Slide", "Neutral")
+        self.buttons_config = {"Left": [None, (255, 0, 0)], "Center": [None, (0, 255, 0)], "Right": [None, (0, 0, 255)], "Jump": [None, (255, 255, 0)], "Slide": [None, (255, 0, 255)], "Neutral": [None, None]}
 
         self.cap = cv2.VideoCapture(0)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
@@ -101,6 +101,9 @@ class HandController:
         self.buttons_config["Jump"][0] = jump_rect
         cv2.rectangle(overlay, (0, y_jump), (w, y_center), self.buttons_config["Jump"][1], -1)
 
+        neutral_rect = (0, y_center, w, y_slide)
+        self.buttons_config["Neutral"][0] = neutral_rect    # Not display on cam
+
         # === Slide (bottom full-width rectangle) ===
         slide_rect = (0, y_slide, w, h)
         self.buttons_config["Slide"][0] = slide_rect
@@ -120,15 +123,18 @@ class HandController:
         cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
         for name, config in self.buttons_config.items():
-            (x1, y1, x2, y2) = config[0]
-            color = config[1]
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            # Center text in button
-            text_size = cv2.getTextSize(name, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
-            text_x = x1 + (x2 - x1 - text_size[0]) // 2
-            text_y = y1 + (y2 - y1 + text_size[1]) // 2
-            cv2.putText(frame, name, (text_x, text_y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+            if name == "Neutral":   # Ignore Neutral to be drawn
+                continue
+            else:
+                (x1, y1, x2, y2) = config[0]
+                color = config[1]
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                # Center text in button
+                text_size = cv2.getTextSize(name, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+                text_x = x1 + (x2 - x1 - text_size[0]) // 2
+                text_y = y1 + (y2 - y1 + text_size[1]) // 2
+                cv2.putText(frame, name, (text_x, text_y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
     def run(self):
         while True:
@@ -165,20 +171,31 @@ class HandController:
                     cx, cy = self.find_control_point(hand_landmarks.landmark, hand_frame)
                     w, h = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     for name, config in self.buttons_config.items():
-                        if cx > (config[0][0]/w) and cx < (config[0][2]/w) and cy > (config[0][1]/h) and cy < (config[0][3]/h):
-                            self.button_pressed = name
+                        if cx > (config[0][0]/w) and cx < (config[0][2]/w) and name in self.lane_list:
+                            self.lane = name
+                        
+                        if cy > (config[0][1]/h) and cy < (config[0][3]/h) and name in self.action_list:
+                            self.action = name
 
-                    match self.button_pressed:
-                        case "Center":
-                            self.middle_lane()
-                        case "Left":
-                            self.left_lane()
-                        case "Right":
-                            self.right_lane()
-                        case 'Jump':
-                            self.jump()
-                        case "Slide":
-                            self.slide()
+                    match (self.lane, self.action):
+                        case "Left", "Jump":
+                            self.LEFT_JUMP()
+                        case "Center", "Jump":
+                            self.CENTRE_JUMP()
+                        case "Right", "Jump":
+                            self.RIGHT_JUMP()
+                        case "Left", "Neutral":
+                            self.LEFT_NEUTRAL()
+                        case "Center", "Neutral":
+                            self.CENTRE_NEUTRAL()
+                        case "Right", "Neutral":
+                            self.RIGHT_NEUTRAL()
+                        case "Left", "Slide":
+                            self.LEFT_ROLL()
+                        case "Center", "Slide":
+                            self.CENTRE_ROLL()
+                        case "Right", "Slide":
+                            self.RIGHT_ROLL()
                     time.sleep(0.1)
 
             cv2.imshow(self.window_titles[0], hand_frame)
@@ -190,24 +207,40 @@ class HandController:
         self.cap.release()
         cv2.destroyAllWindows()
     
-    def jump(self):
-        print("JUMP!")
+    def LEFT_JUMP(self):
+        print("LEFT JUMP!")
         pass
 
-    def slide(self):
-        print("SLIDE!")
+    def CENTRE_JUMP(self):
+        print("CENTRE JUMP!")
         pass
 
-    def left_lane(self):
-        print("GO LEFT!")
+    def RIGHT_JUMP(self):
+        print("RIGHT JUMP!")
         pass
 
-    def right_lane(self):
-        print("GO RIGHT!")
+    def LEFT_NEUTRAL(self):
+        print("LEFT NEUTRAL!")
         pass
 
-    def middle_lane(self):
-        print("GO CENTER")
+    def CENTRE_NEUTRAL(self):
+        print("CENTRE NEUTRAL")
+        pass
+
+    def RIGHT_NEUTRAL(self):
+        print("RIGHT NEUTRAL!")
+        pass
+
+    def LEFT_ROLL(self):
+        print("LEFT ROLL!")
+        pass
+
+    def CENTRE_ROLL(self):
+        print("CENTRE ROLL!")
+        pass
+
+    def RIGHT_ROLL(self):
+        print("RIGHT ROLL!")
         pass
 
 
